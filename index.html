@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#081015" />
+    <title>The Third Light</title>
+    <!-- Critical CSS keeps this visible while the world module builds its scene. -->
+    <style>
+      html,body{margin:0;background:#081015}
+      #loading-screen{position:fixed;inset:0;z-index:100;display:grid;place-items:center;overflow:hidden;padding:24px;background:radial-gradient(ellipse at 72% 29%,#294449 0%,#11252d 34%,#071219 73%),#081015;color:#e9e6dd;font-family:Arial,sans-serif;text-align:center}
+      #loading-screen[hidden]{display:none}
+      #loading-screen:before{content:"";position:absolute;inset:52% -10% -18%;transform:rotate(-7deg);background:linear-gradient(175deg,#304c4f66,#081015 55%);border-top:1px solid #9db1ab40;pointer-events:none}
+      .loading-card{position:relative;width:min(460px,100%);padding:30px 22px}
+      .loading-eyebrow,.loading-count{font-size:11px;font-weight:700;letter-spacing:.24em;color:#cbb58f}
+      .loading-beacons{display:flex;justify-content:center;align-items:center;gap:19px;height:70px;margin-bottom:13px}
+      .loading-beacons i{width:8px;height:8px;border-radius:50%;background:#dac59c;box-shadow:0 0 13px #e3c68a,0 0 34px #e3c68a70;animation:beacon 2.4s ease-in-out infinite}
+      .loading-beacons i:nth-child(2){animation-delay:.3s}.loading-beacons i:nth-child(3){animation-delay:.6s}
+      #loading-heading{margin:16px 0 10px;font:normal clamp(27px,5vw,42px) Georgia,serif;letter-spacing:-.02em}
+      #loading-detail{min-height:2.8em;margin:0 auto 19px;max-width:390px;color:#bfcfc9;font-size:14px;line-height:1.5}
+      #loading-progress{display:block;width:100%;height:6px;margin:0 auto 14px;accent-color:#d9bd88}
+      .loading-count{display:block;color:#b6c6c1;font-size:10px}
+      @keyframes beacon{0%,100%{opacity:.35;transform:scale(.75)}45%{opacity:1;transform:scale(1.38)}}
+      @media(prefers-reduced-motion:reduce){.loading-beacons i{animation:none}}
+    </style>
+  </head>
+  <body>
+    <div id="loading-screen" role="status" aria-live="polite" aria-busy="true">
+      <div class="loading-card">
+        <div class="loading-beacons" aria-hidden="true"><i></i><i></i><i></i></div>
+        <div class="loading-eyebrow">GREYWAKE ISLAND · THE THIRD LIGHT</div>
+        <h2 id="loading-heading">PREPARING THE ISLAND</h2>
+        <p id="loading-detail">Building the island and preparing the first view…</p>
+        <progress id="loading-progress" aria-label="Game loading progress"></progress>
+        <span id="loading-count" class="loading-count">BUILDING THE ISLAND</span>
+      </div>
+    </div>
+    <div id="game"></div>
+    <div id="vignette"></div>
+    <div id="grain"></div>
+    <div id="hud" class="hidden">
+      <div id="hud-top"><span id="chapter-label">CHAPTER 1</span><span id="weather-label">MIST</span></div>
+      <button id="menu-button" type="button" aria-label="Open pause menu">MENU · ESC</button>
+      <div id="objective"></div>
+      <div id="crosshair">·</div>
+      <div id="interaction" class="hidden"></div>
+      <div id="radio" class="hidden"><span class="radio-tag">RADIO</span><span id="radio-text"></span></div>
+      <div id="controls-hint">WASD MOVE &nbsp;·&nbsp; M MAP &nbsp;·&nbsp; J JOURNAL &nbsp;·&nbsp; B CASE BOARD &nbsp;·&nbsp; E INSPECT &nbsp;·&nbsp; F LIGHT &nbsp;·&nbsp; U AUDIO &nbsp;·&nbsp; ESC MENU</div>
+    </div>
+    <div id="drone-hud" class="hidden" role="status" aria-live="off">
+      <strong>DRONE VIEW</strong><span id="drone-altitude">ALTITUDE 0 M</span>
+      <small>WASD FLY · MOUSE LOOK · SPACE RISE · CTRL DESCEND · SHIFT BOOST · G EXIT · ESC MENU</small>
+    </div>
+    <div id="survey-overlay" class="hidden" aria-live="polite">
+      <div class="survey-frame"><span class="survey-corner top-left"></span><span class="survey-corner top-right"></span><span class="survey-corner bottom-left"></span><span class="survey-corner bottom-right"></span><span class="survey-center"></span></div>
+      <div class="survey-readout"><span id="survey-title">FIELD CAMERA</span><span id="survey-zoom">52°</span></div>
+      <div class="survey-bottom"><div id="survey-status">Find both lights.</div><div class="survey-hold"><span id="survey-hold-fill"></span></div><div id="survey-shutter">STEADY THE PAIR TO RELEASE SHUTTER</div><small id="survey-mist"></small><small>Arrow keys for fine aim · +/- zoom · Escape exit</small></div>
+    </div>
+    <div id="screen" class="screen">
+      <div class="screen-card">
+        <div class="eyebrow">A FIRST-PERSON ISLAND MYSTERY</div>
+        <h1>THE<br /><em>THIRD LIGHT</em></h1>
+        <p>Seventeen years ago, a vessel followed the wrong light into the reef. You signed the report that blamed its captain. Now the woman who found proof has vanished.</p>
+        <div id="chapter-selection" class="chapter-selection hidden" aria-live="polite"></div>
+        <button id="start-button">ARRIVE ON THE ISLAND <span>→</span></button>
+        <button id="chapters-button" class="menu-secondary" type="button" aria-expanded="false" aria-controls="chapter-picker">SELECT CHAPTERS</button>
+        <div class="music-settings">
+          <label for="music-volume">SOFT PIANO <output id="music-volume-value">40%</output></label>
+          <input id="music-volume" type="range" min="0" max="100" step="5" value="40" aria-label="Piano music volume" />
+          <small>Set to 0 for weather and sound effects without music.</small>
+          <div class="audio-channel">
+            <label for="sea-volume">SEA AMBIENCE <output id="sea-volume-value">100%</output></label>
+            <input id="sea-volume" type="range" min="0" max="100" step="5" value="100" aria-label="Sea ambience volume" />
+            <small>100% keeps the current quiet surf mix. Lower it without changing rain, wind, or piano.</small>
+          </div>
+        </div>
+        <div id="chapter-picker" class="chapter-picker hidden">
+          <div class="chapter-picker-heading">CHOOSE WHERE TO BEGIN <span>· SPOILERS FOR LATER CHAPTERS</span></div>
+          <div id="chapter-options" class="chapter-options"></div>
+          <button id="chapter-picker-close" class="menu-secondary" type="button">BACK TO MAIN MENU</button>
+        </div>
+        <div class="smallprint">DESKTOP OR LANDSCAPE MOBILE · HEADPHONES RECOMMENDED<br />Desktop: WASD move · Mouse look · E interact · M map · J journal · B case board · F flashlight · U audio · G drone · Shift run · Esc pause<br />Touch: left stick move · drag right to look · tap actions · hold vehicle pedals · drone flight controls</div>
+      </div>
+      <div class="screen-foot">GREYWAKE ISLAND · 58° 37′ N</div>
+    </div>
+    <div id="touch-controls" class="hidden" aria-label="Touch game controls">
+      <div id="touch-look" aria-label="Drag to look around"></div>
+      <div class="touch-top-bar">
+        <button type="button" data-touch-action="menu" aria-label="Pause menu">MENU</button>
+        <button type="button" data-touch-action="journal" aria-label="Field journal">JOURNAL</button>
+        <button type="button" data-touch-action="map" aria-label="Field map">MAP</button>
+        <button type="button" data-touch-action="board" aria-label="Case board">BOARD</button>
+        <button type="button" data-touch-action="light" aria-label="Toggle flashlight">LIGHT</button>
+        <button type="button" data-touch-action="audio" aria-label="Toggle audio">AUDIO</button>
+        <button id="touch-drone-toggle" type="button" data-touch-action="drone" aria-label="Toggle drone view">DRONE</button>
+      </div>
+      <div id="touch-stick" aria-label="Movement and steering joystick"><span id="touch-stick-thumb"></span></div>
+      <button id="touch-action" type="button" data-touch-action="interact">INSPECT</button>
+      <div class="touch-drive-controls">
+        <button type="button" data-touch-hold="reverse" aria-label="Hold to reverse">REVERSE</button>
+        <button type="button" data-touch-hold="brake" aria-label="Hold to brake">BRAKE</button>
+        <button type="button" data-touch-hold="throttle" aria-label="Hold to accelerate">ACCELERATE</button>
+      </div>
+      <div class="touch-survey-controls">
+        <button type="button" data-touch-action="survey-exit">EXIT CAMERA</button>
+        <button type="button" data-touch-action="zoom-out" aria-label="Zoom out">−</button>
+        <button type="button" data-touch-action="zoom-in" aria-label="Zoom in">+</button>
+        <button type="button" data-touch-action="shutter">SHUTTER</button>
+      </div>
+      <div class="touch-drone-controls">
+        <button type="button" data-touch-hold="descend" aria-label="Hold to descend drone">DOWN</button>
+        <button type="button" data-touch-hold="ascend" aria-label="Hold to ascend drone">UP</button>
+        <button type="button" data-touch-hold="boost" aria-label="Hold for faster drone flight">BOOST</button>
+      </div>
+    </div>
+    <div id="touch-rotate" class="hidden" role="status">ROTATE YOUR PHONE TO LANDSCAPE TO PLAY</div>
+    <div id="modal" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="modal-card">
+        <div class="modal-head"><span id="modal-kicker"></span><button id="modal-close" aria-label="Close">×</button></div>
+        <h2 id="modal-title"></h2>
+        <div id="modal-body"></div>
+        <div id="modal-actions"></div>
+      </div>
+    </div>
+    <div id="toast" class="toast hidden"></div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

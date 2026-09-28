@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Fauna visual QA</title>
+<style>
+  *{box-sizing:border-box}body{margin:0;background:#829795;color:#fff;font:18px sans-serif}
+  main{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));height:100vh}
+  section{position:relative;overflow:hidden;border-right:2px solid #b5c6ba}
+  section span{position:absolute;top:15px;left:17px;text-shadow:0 2px 5px #28312b;z-index:1}
+  canvas{display:block}
+</style>
+<main></main>
+<script type="module">
+  import * as THREE from 'three';
+  import { createFauna } from '../src/fauna.js';
+  const views = [
+    { label: 'Feral sheep', eye: [-211.5, 26.2, 112], target: [-214, 25, 106.7] },
+    { label: 'Coastal rabbit', eye: [-151.5, 25.5, 119], target: [-154, 24.45, 116] },
+    { label: 'Coastal gull', eye: [68, 50, 292], target: [66.4, 47, 280] },
+  ];
+  for (const view of views) {
+    const panel = document.createElement('section');
+    panel.innerHTML = `<span>${view.label}</span>`;
+    document.querySelector('main').append(panel);
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x829795);
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(900, 900),
+      new THREE.MeshStandardMaterial({ color: 0x667560, roughness: 1 }));
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.y = 23.98;
+    scene.add(ground);
+    scene.add(new THREE.HemisphereLight(0xc9e1df, 0x455144, 2.6));
+    const sun = new THREE.DirectionalLight(0xffe5be, 2.2);
+    sun.position.set(-12, 20, 9);
+    scene.add(sun);
+    const fauna = createFauna(scene, () => 24);
+    fauna.update(0, 0, 'mist');
+    const camera = new THREE.PerspectiveCamera(39,
+      panel.clientWidth / panel.clientHeight, 0.1, 900);
+    camera.position.set(...view.eye);
+    camera.lookAt(...view.target);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(2, devicePixelRatio));
+    renderer.setSize(panel.clientWidth, panel.clientHeight);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    panel.append(renderer.domElement);
+    renderer.render(scene, camera);
+  }
+</script>
+</html>
